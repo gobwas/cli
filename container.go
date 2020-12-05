@@ -78,7 +78,7 @@ var _ interface { // Compile time checks of desired interfaces implementation.
 	SynopsisProvider
 	DescriptionProvider
 	FlagDefiner
-} = new(Container)
+} = (*Container)(nil)
 
 // Container is a Command wrapper which allows to modify behaviour of the
 // Command it wraps.
