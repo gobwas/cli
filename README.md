@@ -6,7 +6,7 @@
 
 ## Why make another one?
 
-This package is aimed to reach out these goals:
+This package aims to reach out these goals:
 
 1. To be simple as possible.
 2. To be flexible until you not violate (1).
