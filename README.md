@@ -141,5 +141,5 @@ See the [example][example] folder for more info.
 [example]:            https://github.com/gobwas/cli/tree/main/example
 [docs:Runner]:        https://pkg.go.dev/github.com/gobwas/cli#Runner
 [docs:DefaultRunner]: https://pkg.go.dev/github.com/gobwas/cli#DefaultRunner
-[pkggodev:badge]:     https://pkg.go.dev/badge/gobwas/cli
-[pkggodev:url]:       https://pkg.go.dev/gobwas/cli
+[pkggodev:badge]:     https://pkg.go.dev/badge/github.com/gobwas/cli
+[pkggodev:url]:       https://pkg.go.dev/github.com/gobwas/cli
