@@ -28,17 +28,10 @@ as `cli.FlagDefiner`.
 There is no "persistent" or "global" flags. That is, flags are parsed exactly
 for command they appear after.
 
-Implementing this is not a big deal, but it complicates library API enough. For
-instance, if you have custom flag parser and fulfill flag values from env vars
-there as well, you have to do it only for the last command in the path (aka the
-"target" command), because you can’t know which flag was specified before or
-not, while env vars are here from the very first command in the path. In other
-words, if you read env early, you will set appropriate flag value, which can be
-specified later on the path (overwriting it is also not a good idea: since we
-have only Run() method some command may make decisions based on this, which is
-not clear good or not). So to know whether some Command is the target, you have
-to extend Command interface to provide HasNext() method, which will report
-whether the command is actually a wrapper.
+Implementing this is not a big deal, but it complicates library API enough.
+However, it's possible to "mixin" global flags into each command's flag set
+manually (optionally resolving cases when global flag was set twice on the path
+or was rewritten by env value if custom flags parsing used).
 
 ## Usage
 
