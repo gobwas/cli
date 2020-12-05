@@ -63,7 +63,7 @@ func (s *sleepCommand) DefineFlags(fs *flag.FlagSet) {
 
 func (s *sleepCommand) Run(ctx context.Context, _ []string) error {
 	select {
-	case <-ctx.Done(): // SIGINT or SIGTERM received.
+	case <-ctx.Done(): // SIGINT, SIGTERM or SIGQUIT received.
 		return ctx.Err()
 	case <-time.After(s.duration):
 		return nil
@@ -73,7 +73,7 @@ func (s *sleepCommand) Run(ctx context.Context, _ []string) error {
 ```
 
 > Note that `context.Context` instance passed to the `Run()` method will be
-> cancelled by default if process receives _SIGTERM_ or _SIGINT_ signals. See
+> cancelled by default if process receives _SIGTERM_, _SIGINT_ or _SIGQUIT_ signals. See
 > [`cli.Runner`][docs:Runner] and [`cli.DefaultRunner`][docs:DefaultRunner]
 > docs for more info.
 
