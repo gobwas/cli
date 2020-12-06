@@ -51,9 +51,12 @@ type Runner struct {
 // It does some i/o, such that printing help messages or errors returned from
 // cmd.Error().
 func (r *Runner) Main(cmd Command) {
-	intCtx, cancel := withTrapCancel(context.Background(), r.TermSignals...)
-	defer cancel()
-
+	intCtx := context.Background()
+	if len(r.TermSignals) > 0 {
+		var cancel context.CancelFunc
+		intCtx, cancel = withTrapCancel(intCtx, r.TermSignals...)
+		defer cancel()
+	}
 	if n := r.ForceTerm; n > 0 {
 		trapSeq(n, r.TermSignals, func(os.Signal) {
 			os.Exit(130)
