@@ -159,7 +159,9 @@ func run(ctx context.Context, cmd Command, name string, args []string) (err erro
 	})
 
 	args, err = contextRunner(ctx).parseFlags(ctx, fs, args)
-	if err == flag.ErrHelp {
+	// NOTE: we are using errors.Is() here to allow the use of fmt.Errorf()
+	// with `%w` verb.
+	if errors.Is(err, flag.ErrHelp) {
 		err = errHelp
 	}
 	if err != nil {
