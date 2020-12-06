@@ -56,7 +56,7 @@ func (r *Runner) Main(cmd Command) {
 
 	if n := r.ForceTerm; n > 0 {
 		trapSeq(n, r.TermSignals, func(os.Signal) {
-			os.Exit(2)
+			os.Exit(130)
 		})
 	}
 
