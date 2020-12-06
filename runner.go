@@ -44,7 +44,7 @@ type Runner struct {
 
 	// PrintFlags allows to override standard way of flags printing.
 	// It should write all output into given io.Writer.
-	PrintFlags func(io.Writer, *flag.FlagSet)
+	PrintFlags func(context.Context, io.Writer, *flag.FlagSet) error
 }
 
 // Main runs given command.
@@ -107,7 +107,7 @@ func (r *Runner) printUsage(ctx context.Context, dst io.Writer) {
 func (r *Runner) printFlags(ctx context.Context, dst io.Writer) {
 	var buf bytes.Buffer
 	info := lastCommandInfo(ctx)
-	r.printDefaults(&buf, info.flagSet)
+	r.printDefaults(ctx, &buf, info.flagSet)
 	if buf.Len() == 0 {
 		return
 	}
@@ -116,12 +116,12 @@ func (r *Runner) printFlags(ctx context.Context, dst io.Writer) {
 	io.Copy(dst, &buf)
 }
 
-func (r *Runner) printDefaults(dst io.Writer, fs *flag.FlagSet) {
+func (r *Runner) printDefaults(ctx context.Context, dst io.Writer, fs *flag.FlagSet) {
 	print := r.PrintFlags
 	if print == nil {
 		print = defaultPrintFlags
 	}
-	print(dst, fs)
+	print(ctx, dst, fs)
 }
 
 func (r *Runner) output(ctx context.Context, src io.Reader) {
@@ -180,11 +180,12 @@ var defaultParseFlags = func(_ context.Context, fs *flag.FlagSet, args []string)
 	return fs.Args(), nil
 }
 
-var defaultPrintFlags = func(w io.Writer, fs *flag.FlagSet) {
+var defaultPrintFlags = func(_ context.Context, w io.Writer, fs *flag.FlagSet) error {
 	prev := fs.Output()
 	fs.SetOutput(w)
 	fs.PrintDefaults()
 	fs.SetOutput(prev)
+	return nil
 }
 
 var errHelp = errors.New("help requested")
