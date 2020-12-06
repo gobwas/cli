@@ -23,7 +23,7 @@ var _ interface {
 	cli.FlagDefiner
 	cli.NameProvider
 	cli.SynopsisProvider
-} = new(sleepCommand)
+} = (*sleepCommand)(nil)
 
 type sleepCommand struct {
 	duration time.Duration
