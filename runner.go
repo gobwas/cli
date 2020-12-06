@@ -18,12 +18,13 @@ var DefaultRunner = Runner{
 	TermSignals: []os.Signal{
 		syscall.SIGINT,
 		syscall.SIGTERM,
+		syscall.SIGQUIT,
 	},
 }
 
 // Main runs given command using DefaultRunner.
 func Main(cmd Command) {
-	(&Runner{}).Main(cmd)
+	DefaultRunner.Main(cmd)
 }
 
 // Runner holds options for running commands.
