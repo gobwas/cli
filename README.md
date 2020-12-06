@@ -40,8 +40,8 @@ package main
 
 import (
 	"context"
-    "flag"
-    "time"
+	"flag"
+	"time"
 
 	"github.com/gobwas/cli"
 )
@@ -71,7 +71,6 @@ func (s *sleepCommand) Run(ctx context.Context, _ []string) error {
 		return nil
 	}
 }
-
 ```
 
 > Note that `context.Context` instance passed to the `Run()` method will be
