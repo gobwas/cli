@@ -1,0 +1,6 @@
+core:
+  verbose: true
+
+ping:
+  interval: 5s
+  method: GET
