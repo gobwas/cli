@@ -34,12 +34,13 @@ type (
 	}
 )
 
-func defineFlags(c Command, fs *flag.FlagSet) {
-	d, ok := c.(FlagDefiner)
+func defineFlags(cmd Command, fs *flag.FlagSet) {
+	d, ok := cmd.(FlagDefiner)
 	if !ok {
 		return
 	}
 	d.DefineFlags(fs)
+	return
 }
 
 func synopsis(cmd Command) string {
