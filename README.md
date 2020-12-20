@@ -108,7 +108,7 @@ func (s *sleepCommand) Synopsis() string {
 Now the output will look like this:
 
 ```
-$ go run ./example help sleep
+$ go run ./examples/simple help sleep
 Suspends execution for a given amount of time.
 
 Usage:
