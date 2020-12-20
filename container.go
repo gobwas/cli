@@ -85,6 +85,8 @@ var _ interface { // Compile time checks of desired interfaces implementation.
 type Container struct {
 	Command Command
 
+	// DoRun allows to override Command behaviour.
+	DoRun func(context.Context, []string) error
 	// DoName allows to override NameProvider behaviour.
 	DoName func() string
 	// DoSynopsis allows to override SynopsisProvider behaviour.
@@ -101,6 +103,9 @@ type Container struct {
 // non-pointer Container type as a Command. In that case Container would not
 // implement all helper interfaces.
 func (c *Container) Run(ctx context.Context, args []string) error {
+	if f := c.DoRun; f != nil {
+		return f(ctx, args)
+	}
 	return c.Command.Run(ctx, args)
 }
 
