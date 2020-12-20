@@ -37,24 +37,24 @@ type Runner struct {
 	// TermSignals this amount of times should result into os.Exit() call.
 	ForceTerm int
 
-	// ParseFlags allows to override standard way of flags parsing.
+	// DoParseFlags allows to override standard way of flags parsing.
 	// It should return remaining arguments (same as flag.Args() does) or
 	// error.
-	ParseFlags func(context.Context, *flag.FlagSet, []string) ([]string, error)
+	DoParseFlags func(context.Context, *flag.FlagSet, []string) ([]string, error)
 
-	// PrintFlags allows to override standard way of flags printing.
+	// DoPrintFlags allows to override standard way of flags printing.
 	// It should write all output into given io.Writer.
-	PrintFlags func(context.Context, io.Writer, *flag.FlagSet) error
+	DoPrintFlags func(context.Context, io.Writer, *flag.FlagSet) error
 }
 
 // Main runs given command.
 // It does some i/o, such that printing help messages or errors returned from
 // cmd.Error().
 func (r *Runner) Main(cmd Command) {
-	intCtx := context.Background()
+	baseCtx := context.Background()
 	if len(r.TermSignals) > 0 {
 		var cancel context.CancelFunc
-		intCtx, cancel = withTrapCancel(intCtx, r.TermSignals...)
+		baseCtx, cancel = withTrapCancel(baseCtx, r.TermSignals...)
 		defer cancel()
 	}
 	if n := r.ForceTerm; n > 0 {
@@ -63,12 +63,13 @@ func (r *Runner) Main(cmd Command) {
 		})
 	}
 
-	ctx := withRunnerInfo(intCtx, &runnerInfo{
-		runner: r,
-	})
+	ctx := withRunner(baseCtx, r)
 
-	name := path.Base(os.Args[0])
-	err := run(ctx, cmd, name, os.Args[1:])
+	exe := name(cmd)
+	if exe == "" {
+		exe = path.Base(os.Args[0])
+	}
+	err := run(ctx, cmd, exe, os.Args[1:])
 	if err == errHelp {
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
@@ -76,7 +77,7 @@ func (r *Runner) Main(cmd Command) {
 		r.output(ctx, &buf)
 		os.Exit(0)
 	}
-	if intCtx.Err() != nil {
+	if baseCtx.Err() != nil {
 		os.Exit(130)
 	}
 	var e *exitError
@@ -92,7 +93,7 @@ func (r *Runner) Main(cmd Command) {
 
 func (r *Runner) printUsage(ctx context.Context, dst io.Writer) {
 	info := lastCommandInfo(ctx)
-	cmd := info.cmd
+	cmd := info.Command
 	if s := name(cmd); s != "" {
 		fmt.Fprintln(dst, s)
 		fmt.Fprintln(dst)
@@ -110,7 +111,10 @@ func (r *Runner) printUsage(ctx context.Context, dst io.Writer) {
 func (r *Runner) printFlags(ctx context.Context, dst io.Writer) {
 	var buf bytes.Buffer
 	info := lastCommandInfo(ctx)
-	r.printDefaults(ctx, &buf, info.flagSet)
+	if info.FlagSet == nil {
+		return
+	}
+	r.printDefaults(ctx, &buf, info.FlagSet)
 	if buf.Len() == 0 {
 		return
 	}
@@ -120,7 +124,7 @@ func (r *Runner) printFlags(ctx context.Context, dst io.Writer) {
 }
 
 func (r *Runner) printDefaults(ctx context.Context, dst io.Writer, fs *flag.FlagSet) {
-	print := r.PrintFlags
+	print := r.DoPrintFlags
 	if print == nil {
 		print = defaultPrintFlags
 	}
@@ -132,42 +136,40 @@ func (r *Runner) output(ctx context.Context, src io.Reader) {
 }
 
 func (r *Runner) parseFlags(ctx context.Context, fs *flag.FlagSet, args []string) ([]string, error) {
-	parse := r.ParseFlags
+	parse := r.DoParseFlags
 	if parse == nil {
 		parse = defaultParseFlags
 	}
 	return parse(ctx, fs, args)
 }
 
-func setup(ctx context.Context, cmd Command, name string) {
-	fs := newFlagSet(name)
-	defineFlags(cmd, fs)
-	pushCommandInfo(ctx, &commandInfo{
-		cmd:     cmd,
-		name:    name,
-		flagSet: fs,
-	})
+func setup(ctx context.Context, cmd Command, name string) (context.Context, *flag.FlagSet) {
+	var fs *flag.FlagSet
+	if _, ok := cmd.(FlagDefiner); ok {
+		fs = newFlagSet(name)
+		defineFlags(cmd, fs)
+	}
+	info := CommandInfo{
+		Name:    name,
+		Command: cmd,
+		FlagSet: fs,
+	}
+	return WithCommandInfo(ctx, info), fs
 }
 
 func run(ctx context.Context, cmd Command, name string, args []string) (err error) {
-	fs := newFlagSet(name)
-	defineFlags(cmd, fs)
-	pushCommandInfo(ctx, &commandInfo{
-		cmd:     cmd,
-		name:    name,
-		flagSet: fs,
-	})
-
-	args, err = contextRunner(ctx).parseFlags(ctx, fs, args)
-	// NOTE: we are using errors.Is() here to allow the use of fmt.Errorf()
-	// with `%w` verb.
-	if errors.Is(err, flag.ErrHelp) {
-		err = errHelp
+	ctx, fs := setup(ctx, cmd, name)
+	if fs != nil {
+		args, err = contextRunner(ctx).parseFlags(ctx, fs, args)
+		// NOTE: we are using errors.Is() here to allow the use of fmt.Errorf()
+		// with `%w` verb.
+		if errors.Is(err, flag.ErrHelp) {
+			err = errHelp
+		}
+		if err != nil {
+			return err
+		}
 	}
-	if err != nil {
-		return err
-	}
-
 	return cmd.Run(ctx, args)
 }
 
