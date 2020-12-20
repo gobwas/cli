@@ -63,7 +63,9 @@ func (r *Runner) Main(cmd Command) {
 		})
 	}
 
-	ctx := withRunner(baseCtx, r)
+	ctx := withRuntimeInfo(baseCtx, &runtimeInfo{
+		runner: r,
+	})
 
 	exe := name(cmd)
 	if exe == "" {
@@ -154,7 +156,7 @@ func setup(ctx context.Context, cmd Command, name string) (context.Context, *fla
 		Command: cmd,
 		FlagSet: fs,
 	}
-	return WithCommandInfo(ctx, info), fs
+	return withCommandInfo(ctx, info), fs
 }
 
 func run(ctx context.Context, cmd Command, name string, args []string) (err error) {

@@ -36,22 +36,48 @@ func ContextCommandsInfo(ctx context.Context) []CommandInfo {
 	return cs
 }
 
-type contextRunnerKey struct{}
+type contextRunnerInfoKey struct{}
 
-func withRunner(ctx context.Context, r *Runner) context.Context {
-	return context.WithValue(ctx, contextRunnerKey{}, r)
+type runtimeInfo struct {
+	runner *Runner
+
+	// commands is a mutable slice of CommandInfo.
+	// It's for internal use only.
+	commands []CommandInfo
 }
 
-func contextRunner(ctx context.Context) *Runner {
-	r, _ := ctx.Value(contextRunnerKey{}).(*Runner)
+func withRuntimeInfo(ctx context.Context, r *runtimeInfo) context.Context {
+	return context.WithValue(ctx, contextRunnerInfoKey{}, r)
+}
+
+func withCommandInfo(ctx context.Context, info CommandInfo) context.Context {
+	r := contextRuntimeInfo(ctx)
+	r.commands = append(r.commands, info)
+	return WithCommandInfo(ctx, info)
+}
+
+func contextRuntimeInfo(ctx context.Context) *runtimeInfo {
+	r, _ := ctx.Value(contextRunnerInfoKey{}).(*runtimeInfo)
 	if r == nil {
-		panic("cli: internal error: no runner associated with context")
+		panic("cli: internal error: no runner info associated with context")
 	}
 	return r
 }
 
+func contextRunner(ctx context.Context) *Runner {
+	return contextRuntimeInfo(ctx).runner
+}
+
+// contextCommandsInfo is an internal only version of ContextCommandsInfo().
+//
+// Compared to exported ContextCommandsInfo(), returned slice is mutated per
+// each Run() and all execution path is accessible at any moment.
+func contextCommandsInfo(ctx context.Context) []CommandInfo {
+	return contextRuntimeInfo(ctx).commands
+}
+
 func lastCommandInfo(ctx context.Context) CommandInfo {
-	cs := ContextCommandsInfo(ctx)
+	cs := contextCommandsInfo(ctx)
 	n := len(cs)
 	if n == 0 {
 		panic("cli: internal error: no commands associated with context")
@@ -61,7 +87,7 @@ func lastCommandInfo(ctx context.Context) CommandInfo {
 
 func commandPath(ctx context.Context) string {
 	var sb strings.Builder
-	for _, c := range ContextCommandsInfo(ctx) {
+	for _, c := range contextCommandsInfo(ctx) {
 		if sb.Len() > 0 {
 			sb.WriteByte(' ')
 		}
