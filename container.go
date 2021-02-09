@@ -99,9 +99,9 @@ type Container struct {
 
 // Run implements Command interface.
 ///
-// NOTE: we are explicit here (and not embed Command) to now allow the use of
-// non-pointer Container type as a Command. In that case Container would not
-// implement all helper interfaces.
+// NOTE: we are explicit here (and are not embedding Command) to not allow the
+// use of non-pointer Container type as a Command. Otherwise Container would
+// not implement helper interfaces but still be a valid Command.
 func (c *Container) Run(ctx context.Context, args []string) error {
 	if f := c.DoRun; f != nil {
 		return f(ctx, args)
