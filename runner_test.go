@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"os"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -79,11 +81,8 @@ func TestRunnerRun(t *testing.T) {
 		"  prog [help] <command>",
 		"",
 		"Commands:",
-		// NOTE: tabwriter pads every tab-terminated cell, so rows with an
-		// empty name carry trailing spaces, except the last one, which is
-		// not newline-terminated and thus is not part of the column.
-		"  exit   ",
-		"  fail   ",
+		"  exit",
+		"  fail",
 		"  sleep  Sleeps.",
 		"  wait",
 		"",
@@ -94,6 +93,7 @@ func TestRunnerRun(t *testing.T) {
 		name   string
 		args   []string
 		cancel bool
+		signal os.Signal
 
 		code    int
 		stdout  string
@@ -194,6 +194,14 @@ func TestRunnerRun(t *testing.T) {
 
 			code: 130,
 		},
+		{
+			name:   "cancelled by signal",
+			args:   []string{"wait"},
+			cancel: true,
+			signal: syscall.SIGTERM,
+
+			code: 143,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			actArgs = nil
@@ -204,10 +212,14 @@ func TestRunnerRun(t *testing.T) {
 				Stdout: &stdout,
 				Stderr: &stderr,
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx, cancel := context.WithCancelCause(context.Background())
+			defer cancel(nil)
 			if test.cancel {
-				cancel()
+				var cause error
+				if test.signal != nil {
+					cause = &signalError{test.signal}
+				}
+				cancel(cause)
 			}
 			code := r.Run(ctx, root, "prog", test.args)
 			if code != test.code {

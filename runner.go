@@ -70,8 +70,8 @@ func (r *Runner) Main(cmd Command) {
 	// NOTE: signal.Notify() with no signals subscribes to all of them, hence
 	// the length check.
 	if n := r.ForceTerm; n > 0 && len(r.TermSignals) > 0 {
-		trapSeq(n, r.TermSignals, func(os.Signal) {
-			os.Exit(130)
+		trapSeq(n, r.TermSignals, func(sig os.Signal) {
+			os.Exit(signalExitCode(sig))
 		})
 	}
 	os.Exit(r.Run(ctx, cmd, filepath.Base(os.Args[0]), os.Args[1:]))
@@ -83,7 +83,8 @@ func (r *Runner) Main(cmd Command) {
 // It does some i/o, such that printing help messages to Stdout or usage and
 // errors returned from cmd.Run() to Stderr. Unlike Main(), it neither traps
 // OS signals nor exits the process: a cancelled ctx is reported as exit code
-// 130.
+// 128 plus the number of the signal which cancelled it, or 130 if it was
+// cancelled for another reason.
 func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []string) int {
 	baseCtx := ctx
 	ctx = withRuntimeInfo(ctx, &runtimeInfo{
@@ -108,7 +109,7 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		return 2
 	}
 	if baseCtx.Err() != nil {
-		return 130
+		return contextExitCode(baseCtx)
 	}
 	if e, ok := errors.AsType[*exitError](err); ok {
 		fmt.Fprintln(r.stderr(), err)
