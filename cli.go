@@ -40,7 +40,6 @@ func defineFlags(cmd Command, fs *flag.FlagSet) {
 		return
 	}
 	d.DefineFlags(fs)
-	return
 }
 
 func synopsis(cmd Command) string {

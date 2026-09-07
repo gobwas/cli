@@ -151,7 +151,7 @@ wrapper.
 See the [example][example] folder for more info.
 
 [flagutil]:           https://github.com/gobwas/flagutil
-[example]:            https://github.com/gobwas/cli/tree/main/example
+[example]:            https://github.com/gobwas/cli/tree/main/examples
 [docs:Runner]:        https://pkg.go.dev/github.com/gobwas/cli#Runner
 [docs:DefaultRunner]: https://pkg.go.dev/github.com/gobwas/cli#DefaultRunner
 [pkggodev:badge]:     https://pkg.go.dev/badge/github.com/gobwas/cli

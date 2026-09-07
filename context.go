@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// CommandInfo describes a Command in the execution path: its name as given on
+// the command line, the Command itself and its flag set.
 type CommandInfo struct {
 	Name    string
 	Command Command

@@ -4,9 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
-	"text/tabwriter"
+	"unicode/utf8"
 )
 
 // Commands holds a mapping of sub command name to its implementation.
@@ -55,23 +56,26 @@ func (c Commands) Synopsis() string {
 
 // Description implements DescriptionProvider interface.
 func (c Commands) Description() string {
+	keys := slices.Sorted(maps.Keys(c))
+	width := 0
+	for _, key := range keys {
+		width = max(width, utf8.RuneCountInString(key))
+	}
+	// NOTE: we align columns by hand instead of using text/tabwriter since it
+	// pads every tab-terminated cell, leaving trailing whitespace on the rows
+	// without a name, and it treats the last row without trailing newline
+	// differently from the rest, making the output inconsistent.
 	var sb strings.Builder
-	cs := make([]string, 0, len(c))
-	for key := range c {
-		cs = append(cs, key)
-	}
-	sort.Strings(cs)
-	fmt.Fprintln(&sb, "Commands:")
-	tw := tabwriter.NewWriter(&sb, 0, 1, 2, ' ', 0)
-	for i, key := range cs {
-		if i > 0 {
-			fmt.Fprintln(tw)
+	sb.WriteString("Commands:")
+	for _, key := range keys {
+		fmt.Fprintf(&sb, "\n  %s", key)
+		// Pad only when there is something to align, to not leave trailing
+		// whitespace.
+		if s := name(c[key]); s != "" {
+			pad := width - utf8.RuneCountInString(key) + 2
+			fmt.Fprintf(&sb, "%*s%s", pad, "", s)
 		}
-		cmd := c[key]
-		fmt.Fprintf(tw, "  %s\t%s", key, name(cmd))
 	}
-	tw.Flush()
-
 	return sb.String()
 }
 
