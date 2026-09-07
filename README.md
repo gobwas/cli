@@ -25,9 +25,10 @@ as `cli.FlagDefiner`.
 
 Every command parses its arguments, whether or not it defines flags: `-h`
 prints its help, and an unknown flag is refused with exit code 2 rather than
-passed on. To hand arguments through verbatim (for example, to a program the
-command wraps), put them after `--`: everything after the separator reaches
-`Run()` unparsed.
+passed on. Parsing follows the standard `flag` package rules: it stops at the
+first non-flag argument, so anything after that (including `-`-prefixed
+strings) reaches `Run()` as is. To hand arguments through verbatim (for
+example, to a program the command wraps), put them after `--`.
 
 Help that was asked for (`-h`, or the `help` command) goes to stdout with exit
 code 0. Usage printed because the invocation was wrong (a command group given
