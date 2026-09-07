@@ -1,6 +1,7 @@
 # cli
 
 [![PkgGoDev][pkggodev:badge]][pkggodev:url]
+[![CI][ci:badge]][ci:url]
 
 > Package cli is a tiny and minimalistic CLI library for Go.
 
@@ -156,3 +157,5 @@ See the [example][example] folder for more info.
 [docs:DefaultRunner]: https://pkg.go.dev/github.com/gobwas/cli#DefaultRunner
 [pkggodev:badge]:     https://pkg.go.dev/badge/github.com/gobwas/cli
 [pkggodev:url]:       https://pkg.go.dev/github.com/gobwas/cli
+[ci:badge]:           https://github.com/gobwas/cli/actions/workflows/ci.yml/badge.svg
+[ci:url]:             https://github.com/gobwas/cli/actions/workflows/ci.yml
