@@ -76,7 +76,7 @@ func (r *Runner) Main(cmd Command) {
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
 		r.printFlags(ctx, &buf)
-		r.output(ctx, &buf)
+		io.Copy(os.Stdout, &buf)
 		os.Exit(0)
 		return
 	}
@@ -144,10 +144,6 @@ func (r *Runner) printDefaults(ctx context.Context, dst io.Writer, fs *flag.Flag
 		print = defaultPrintFlags
 	}
 	print(ctx, dst, fs)
-}
-
-func (r *Runner) output(ctx context.Context, src io.Reader) {
-	io.Copy(os.Stdout, src)
 }
 
 func (r *Runner) parseFlags(ctx context.Context, fs *flag.FlagSet, args []string) ([]string, error) {
