@@ -216,16 +216,17 @@ var (
 // Exitf creates an error which reception cause Runner.Main() to exit with
 // given code preceded by formatted message.
 func Exitf(code int, f string, args ...any) error {
-	e := &exitError{
-		code: code,
+	return &exitError{
+		code:   code,
+		reason: fmt.Sprintf(f, args...),
 	}
-	return fmt.Errorf(fmt.Sprintf(f, args...)+"%w", e)
 }
 
 type exitError struct {
-	code int
+	code   int
+	reason string
 }
 
 func (e *exitError) Error() string {
-	return ""
+	return e.reason
 }
