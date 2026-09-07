@@ -159,11 +159,10 @@ func (r *Runner) parseFlags(ctx context.Context, fs *flag.FlagSet, args []string
 }
 
 func setup(ctx context.Context, cmd Command, name string) (context.Context, *flag.FlagSet) {
-	var fs *flag.FlagSet
-	if _, ok := cmd.(FlagDefiner); ok {
-		fs = newFlagSet(name)
-		defineFlags(cmd, fs)
-	}
+	// Every command parses, flags or not: -h works everywhere, and a stray
+	// flag is refused instead of being passed on as an argument.
+	fs := newFlagSet(name)
+	defineFlags(cmd, fs)
 	info := CommandInfo{
 		Name:    name,
 		Command: cmd,
@@ -174,16 +173,16 @@ func setup(ctx context.Context, cmd Command, name string) (context.Context, *fla
 
 func run(ctx context.Context, cmd Command, name string, args []string) (err error) {
 	ctx, fs := setup(ctx, cmd, name)
-	if fs != nil {
-		args, err = contextRunner(ctx).parseFlags(ctx, fs, args)
-		// NOTE: we are using errors.Is() here to allow the use of fmt.Errorf()
-		// with `%w` verb.
-		if errors.Is(err, flag.ErrHelp) {
-			err = errHelp
-		}
-		if err != nil {
-			return err
-		}
+	args, err = contextRunner(ctx).parseFlags(ctx, fs, args)
+	// NOTE: we are using errors.Is() here to allow the use of fmt.Errorf()
+	// with `%w` verb.
+	if errors.Is(err, flag.ErrHelp) {
+		return errHelp
+	}
+	if err != nil {
+		// A flag the parser refused is a usage error, like a missing
+		// command: the parser's message, exit 2.
+		return Exitf(2, "%v", err)
 	}
 	return cmd.Run(ctx, args)
 }

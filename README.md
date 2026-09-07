@@ -23,6 +23,17 @@ You can group commands by using `cli.Commands` map type.
 Additional behaviour can be added by implementing few optional interfaces such
 as `cli.FlagDefiner`.
 
+Every command parses its arguments, whether or not it defines flags: `-h`
+prints its help, and an unknown flag is refused with exit code 2 rather than
+passed on. To hand arguments through verbatim (for example, to a program the
+command wraps), put them after `--`: everything after the separator reaches
+`Run()` unparsed.
+
+Help that was asked for (`-h`, or the `help` command) goes to stdout with exit
+code 0. Usage printed because the invocation was wrong (a command group given
+no command) goes to stderr with exit code 2, as do other errors with their own
+codes.
+
 ## Limitations
 
 There is no "persistent" or "global" flags. That is, flags are parsed exactly
