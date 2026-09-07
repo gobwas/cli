@@ -6,6 +6,13 @@ import (
 	"os/signal"
 )
 
+// withTrapCancel returns a context which is cancelled on reception of any of
+// the given signals.
+//
+// Only the first signal is trapped: after it, the signal handler is removed,
+// so that the second signal (unless trapped by ForceTerm) terminates the
+// process with the default disposition. That is, a command which does not
+// respect context cancellation can still be interrupted.
 func withTrapCancel(ctx context.Context, ss ...os.Signal) (context.Context, context.CancelFunc) {
 	ret, cancel := context.WithCancel(ctx)
 	ch := make(chan os.Signal, len(ss))

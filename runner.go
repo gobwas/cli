@@ -67,7 +67,9 @@ func (r *Runner) Main(cmd Command) {
 		ctx, cancel = withTrapCancel(ctx, r.TermSignals...)
 		defer cancel()
 	}
-	if n := r.ForceTerm; n > 0 {
+	// NOTE: signal.Notify() with no signals subscribes to all of them, hence
+	// the length check.
+	if n := r.ForceTerm; n > 0 && len(r.TermSignals) > 0 {
 		trapSeq(n, r.TermSignals, func(os.Signal) {
 			os.Exit(130)
 		})
