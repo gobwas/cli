@@ -71,23 +71,38 @@ func (r *Runner) Main(cmd Command) {
 		exe = path.Base(os.Args[0])
 	}
 	err := run(ctx, cmd, exe, os.Args[1:])
-	if err == errHelp {
+	if errors.Is(err, errHelp) {
+		// Help was asked for: it is the output, so stdout and success.
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
 		r.printFlags(ctx, &buf)
 		r.output(ctx, &buf)
 		os.Exit(0)
+		return
+	}
+	if errors.Is(err, errUsage) {
+		// Help was not asked for; the invocation was wrong. Usage goes
+		// where errors go, with the usage exit code.
+		var buf bytes.Buffer
+		r.printUsage(ctx, &buf)
+		r.printFlags(ctx, &buf)
+		io.Copy(os.Stderr, &buf)
+		os.Exit(2)
+		return
 	}
 	if baseCtx.Err() != nil {
 		os.Exit(130)
+		return
 	}
 	if e, ok := errors.AsType[*exitError](err); ok {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(e.code)
+		return
 	}
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+		return
 	}
 }
 
@@ -195,7 +210,13 @@ var defaultPrintFlags = func(_ context.Context, w io.Writer, fs *flag.FlagSet) e
 	return nil
 }
 
-var errHelp = errors.New("help requested")
+var (
+	// errHelp is help asked for explicitly (-h or the help command).
+	errHelp = errors.New("help requested")
+	// errUsage is an invocation that cannot run, such as a command
+	// container given no command.
+	errUsage = errors.New("usage error")
+)
 
 // Exitf creates an error which reception cause Runner.Main() to exit with
 // given code preceded by formatted message.

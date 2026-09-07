@@ -23,7 +23,10 @@ func (c Commands) Run(ctx context.Context, args []string) error {
 	var help bool
 top:
 	if len(args) == 0 {
-		return errHelp
+		if help {
+			return errHelp
+		}
+		return errUsage
 	}
 	if args[0] == "help" {
 		help = true
