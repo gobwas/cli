@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"syscall"
 )
 
@@ -44,16 +44,27 @@ type Runner struct {
 	// DoPrintFlags allows to override standard way of flags printing.
 	// It should write all output into given io.Writer.
 	DoPrintFlags func(context.Context, io.Writer, *flag.FlagSet) error
+
+	// Stdout is where help that was asked for is printed.
+	// Nil means os.Stdout.
+	Stdout io.Writer
+
+	// Stderr is where usage of a wrong invocation and errors are printed.
+	// Nil means os.Stderr.
+	Stderr io.Writer
 }
 
-// Main runs given command.
-// It does some i/o, such that printing help messages or errors returned from
-// cmd.Error().
+// Main runs given command with os.Args and exits the process with the code
+// returned by Run(). The base name of os.Args[0] is used as the root of the
+// command path in help messages.
+//
+// It cancels the context passed to the command on reception of any of the
+// TermSignals. See Runner fields docs for more info.
 func (r *Runner) Main(cmd Command) {
-	baseCtx := context.Background()
+	ctx := context.Background()
 	if len(r.TermSignals) > 0 {
 		var cancel context.CancelFunc
-		baseCtx, cancel = withTrapCancel(baseCtx, r.TermSignals...)
+		ctx, cancel = withTrapCancel(ctx, r.TermSignals...)
 		defer cancel()
 	}
 	if n := r.ForceTerm; n > 0 {
@@ -61,24 +72,29 @@ func (r *Runner) Main(cmd Command) {
 			os.Exit(130)
 		})
 	}
+	os.Exit(r.Run(ctx, cmd, filepath.Base(os.Args[0]), os.Args[1:]))
+}
 
-	ctx := withRuntimeInfo(baseCtx, &runtimeInfo{
+// Run runs given command with given name and arguments (without the program
+// name) and returns the exit code of the process.
+//
+// It does some i/o, such that printing help messages to Stdout or usage and
+// errors returned from cmd.Run() to Stderr. Unlike Main(), it neither traps
+// OS signals nor exits the process: a cancelled ctx is reported as exit code
+// 130.
+func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []string) int {
+	baseCtx := ctx
+	ctx = withRuntimeInfo(ctx, &runtimeInfo{
 		runner: r,
 	})
-
-	exe := name(cmd)
-	if exe == "" {
-		exe = path.Base(os.Args[0])
-	}
-	err := run(ctx, cmd, exe, os.Args[1:])
+	err := run(ctx, cmd, name, args)
 	if errors.Is(err, errHelp) {
 		// Help was asked for: it is the output, so stdout and success.
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
 		r.printFlags(ctx, &buf)
-		io.Copy(os.Stdout, &buf)
-		os.Exit(0)
-		return
+		io.Copy(r.stdout(), &buf)
+		return 0
 	}
 	if errors.Is(err, errUsage) {
 		// Help was not asked for; the invocation was wrong. Usage goes
@@ -86,24 +102,35 @@ func (r *Runner) Main(cmd Command) {
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
 		r.printFlags(ctx, &buf)
-		io.Copy(os.Stderr, &buf)
-		os.Exit(2)
-		return
+		io.Copy(r.stderr(), &buf)
+		return 2
 	}
 	if baseCtx.Err() != nil {
-		os.Exit(130)
-		return
+		return 130
 	}
 	if e, ok := errors.AsType[*exitError](err); ok {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(e.code)
-		return
+		fmt.Fprintln(r.stderr(), err)
+		return e.code
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-		return
+		fmt.Fprintln(r.stderr(), err)
+		return 1
 	}
+	return 0
+}
+
+func (r *Runner) stdout() io.Writer {
+	if r.Stdout != nil {
+		return r.Stdout
+	}
+	return os.Stdout
+}
+
+func (r *Runner) stderr() io.Writer {
+	if r.Stderr != nil {
+		return r.Stderr
+	}
+	return os.Stderr
 }
 
 func (r *Runner) printUsage(ctx context.Context, dst io.Writer) {
