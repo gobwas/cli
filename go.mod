@@ -1,3 +1,3 @@
 module github.com/gobwas/cli
 
-go 1.15
+go 1.26

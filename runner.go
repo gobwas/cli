@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"syscall"
@@ -82,8 +81,7 @@ func (r *Runner) Main(cmd Command) {
 	if baseCtx.Err() != nil {
 		os.Exit(130)
 	}
-	var e *exitError
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*exitError](err); ok {
 		fmt.Println(err)
 		os.Exit(e.code)
 	}
@@ -178,7 +176,7 @@ func run(ctx context.Context, cmd Command, name string, args []string) (err erro
 func newFlagSet(name string) *flag.FlagSet {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.Usage = func() {}
-	fs.SetOutput(ioutil.Discard)
+	fs.SetOutput(io.Discard)
 	return fs
 }
 
@@ -201,7 +199,7 @@ var errHelp = errors.New("help requested")
 
 // Exitf creates an error which reception cause Runner.Main() to exit with
 // given code preceded by formatted message.
-func Exitf(code int, f string, args ...interface{}) error {
+func Exitf(code int, f string, args ...any) error {
 	e := &exitError{
 		code: code,
 	}
