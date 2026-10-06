@@ -17,7 +17,6 @@ var DefaultRunner = Runner{
 	TermSignals: []os.Signal{
 		syscall.SIGINT,
 		syscall.SIGTERM,
-		syscall.SIGQUIT,
 	},
 }
 
