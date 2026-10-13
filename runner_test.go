@@ -58,6 +58,9 @@ func TestRunnerRun(t *testing.T) {
 		"exit": CommandFunc(func(context.Context, []string) error {
 			return Exitf(42, "exit with %d%%", 42)
 		}),
+		"silent": CommandFunc(func(context.Context, []string) error {
+			return Exitf(1, "")
+		}),
 		"wait": CommandFunc(func(ctx context.Context, _ []string) error {
 			<-ctx.Done()
 			return ctx.Err()
@@ -83,7 +86,8 @@ func TestRunnerRun(t *testing.T) {
 		"Commands:",
 		"  exit",
 		"  fail",
-		"  sleep  Sleeps.",
+		"  silent",
+		"  sleep   Sleeps.",
 		"  wait",
 		"",
 		"",
@@ -186,6 +190,13 @@ func TestRunnerRun(t *testing.T) {
 
 			code:   42,
 			stderr: "exit with 42%\n",
+		},
+		{
+			name: "exit error without reason",
+			args: []string{"silent"},
+
+			code:   1,
+			stderr: "",
 		},
 		{
 			name:   "cancelled",

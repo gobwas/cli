@@ -111,7 +111,11 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		return contextExitCode(baseCtx)
 	}
 	if e, ok := errors.AsType[*exitError](err); ok {
-		fmt.Fprintln(r.stderr(), err)
+		// An empty reason is a code alone, with nothing to say: a search that
+		// found nothing, as grep exits 1 in silence.
+		if e.reason != "" {
+			fmt.Fprintln(r.stderr(), err)
+		}
 		return e.code
 	}
 	if err != nil {
@@ -243,7 +247,7 @@ var (
 )
 
 // Exitf creates an error which reception cause Runner.Main() to exit with
-// given code preceded by formatted message.
+// given code preceded by formatted message (if not empty).
 func Exitf(code int, f string, args ...any) error {
 	return &exitError{
 		code:   code,
