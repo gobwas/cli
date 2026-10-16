@@ -149,11 +149,7 @@ func (r *Runner) stderr() io.Writer {
 func (r *Runner) printUsage(ctx context.Context, dst io.Writer) {
 	info := lastCommandInfo(ctx)
 	cmd := info.Command
-	s := prolog(cmd)
-	if s == "" {
-		s = name(cmd)
-	}
-	if s != "" {
+	if s := prolog(cmd); s != "" {
 		fmt.Fprintln(dst, s)
 		fmt.Fprintln(dst)
 	}

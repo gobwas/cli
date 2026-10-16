@@ -21,12 +21,12 @@ func (f CommandFunc) Run(ctx context.Context, args []string) error {
 
 type (
 	// NameProvider gives the one-line summary listed next to the command's
-	// name; it also opens the command's help when there is no Prolog.
+	// name.
 	NameProvider interface {
 		Name() string
 	}
-	// PrologProvider gives the text that opens the command's help in place
-	// of its Name.
+	// PrologProvider gives the text that opens the command's help, before its
+	// usage.
 	PrologProvider interface {
 		Prolog() string
 	}
@@ -36,8 +36,8 @@ type (
 	DescriptionProvider interface {
 		Description() string
 	}
-	// EpilogProvider gives the text that closes the command's help, after
-	// its options.
+	// EpilogProvider gives the text that closes the command's help, after its
+	// options.
 	EpilogProvider interface {
 		Epilog() string
 	}
