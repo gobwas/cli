@@ -25,9 +25,9 @@ func (c Commands) Run(ctx context.Context, args []string) error {
 top:
 	if len(args) == 0 {
 		if help {
-			return errHelp
+			return ErrHelp
 		}
-		return errUsage
+		return ErrUsage
 	}
 	if args[0] == "help" {
 		help = true
@@ -44,7 +44,7 @@ top:
 	}
 	if help {
 		setup(ctx, cmd, name)
-		return errHelp
+		return ErrHelp
 	}
 	return run(ctx, cmd, name, args[1:])
 }

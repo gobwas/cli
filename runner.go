@@ -90,7 +90,7 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		runner: r,
 	})
 	err := run(ctx, cmd, name, args)
-	if errors.Is(err, errHelp) {
+	if errors.Is(err, ErrHelp) {
 		// Help was asked for: it is the output, so stdout and success.
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
@@ -98,7 +98,7 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		io.Copy(r.stdout(), &buf)
 		return 0
 	}
-	if errors.Is(err, errUsage) {
+	if errors.Is(err, ErrUsage) {
 		// Help was not asked for; the invocation was wrong. Usage goes
 		// where errors go, with the usage exit code.
 		var buf bytes.Buffer
@@ -111,9 +111,9 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		return contextExitCode(baseCtx)
 	}
 	if e, ok := errors.AsType[*ExitError](err); ok {
-		// An empty reason is a code alone, with nothing to say: a search that
+		// A nil Err is a code alone, with nothing to say: a search that
 		// found nothing, as grep exits 1 in silence.
-		if e.Reason != "" {
+		if e.Err != nil {
 			fmt.Fprintln(r.stderr(), err)
 		}
 		return e.Code
@@ -202,10 +202,13 @@ func run(ctx context.Context, cmd Command, name string, args []string) (err erro
 	ctx, fs := setup(ctx, cmd, name)
 	args, err = contextRunner(ctx).parseFlags(ctx, fs, args)
 	if errors.Is(err, flag.ErrHelp) {
-		return errHelp
+		return ErrHelp
 	}
 	if err != nil {
-		return Exitf(2, "%v", err)
+		return &ExitError{
+			Code: 2,
+			Err:  err,
+		}
 	}
 	return cmd.Run(ctx, args)
 }
@@ -233,34 +236,48 @@ var defaultPrintFlags = func(_ context.Context, w io.Writer, fs *flag.FlagSet) e
 }
 
 var (
-	// errHelp is help asked for explicitly (-h or the help command).
-	errHelp = errors.New("help requested")
-	// errUsage is an invocation that cannot run, such as a command
-	// container given no command.
-	errUsage = errors.New("usage error")
+	// ErrHelp is help asked for explicitly (-h or the help command).
+	//
+	// A Command may return it to have its help printed to Stdout with exit
+	// code 0.
+	ErrHelp = errors.New("help requested")
+
+	// ErrUsage is an invocation that cannot run, such as a command container
+	// given no command.
+	//
+	// A Command may return it (for example, when given wrong positional
+	// arguments) to have its usage printed to Stderr with exit code 2.
+	ErrUsage = errors.New("usage error")
 )
 
 // Exitf returns an error which makes Runner exit with the given code, printing
-// the formatted message to Stderr if it is not empty.
+// the formatted message Stderr.
+//
+// Using %w verb in f wraps the error as fmt.Errorf does.
 func Exitf(code int, f string, args ...any) error {
 	return &ExitError{
-		Code:   code,
-		Reason: fmt.Sprintf(f, args...),
+		Code: code,
+		Err:  fmt.Errorf(f, args...),
 	}
 }
 
 // ExitError signals that program must be terminated with the given exit code.
-// Non-empty Reason is printed to Stderr before exit.
+// Non-nil Err is printed to Stderr before exit; nil Err means silent exit.
 type ExitError struct {
-	Code   int
-	Reason string
+	Code int
+	Err  error
 }
 
 // Error implements error interface.
-// It returns Reason or, if it is empty, a generic "exit status" message.
+// It returns Err.Error() or, if Err is nil, a generic "exit status" message.
 func (e *ExitError) Error() string {
-	if e.Reason == "" {
+	if e.Err == nil {
 		return fmt.Sprintf("exit status %d", e.Code)
 	}
-	return e.Reason
+	return e.Err.Error()
+}
+
+// Unwrap returns Err.
+func (e *ExitError) Unwrap() error {
+	return e.Err
 }

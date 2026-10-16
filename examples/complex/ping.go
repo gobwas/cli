@@ -35,7 +35,8 @@ func (p *ping) Synopsis() string {
 
 func (p *ping) Run(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return cli.Exitf(2, "no hosts to ping were given")
+		// Prints usage of this command to stderr and exits with code 2.
+		return cli.ErrUsage
 	}
 	for {
 		for _, host := range args {

@@ -59,7 +59,16 @@ func TestRunnerRun(t *testing.T) {
 			return Exitf(42, "exit with %d%%", 42)
 		}),
 		"silent": CommandFunc(func(context.Context, []string) error {
-			return Exitf(1, "")
+			return &ExitError{Code: 1}
+		}),
+		"stop": CommandFunc(func(context.Context, []string) error {
+			return &ExitError{Code: 0}
+		}),
+		"wrap": CommandFunc(func(context.Context, []string) error {
+			return Exitf(3, "wrapped: %w", os.ErrNotExist)
+		}),
+		"usage": CommandFunc(func(context.Context, []string) error {
+			return ErrUsage
 		}),
 		"wait": CommandFunc(func(ctx context.Context, _ []string) error {
 			<-ctx.Done()
@@ -88,7 +97,10 @@ func TestRunnerRun(t *testing.T) {
 		"  fail",
 		"  silent",
 		"  sleep   Sleeps.",
+		"  stop",
+		"  usage",
 		"  wait",
+		"  wrap",
 		"",
 		"",
 	}, "\n")
@@ -197,6 +209,33 @@ func TestRunnerRun(t *testing.T) {
 
 			code:   1,
 			stderr: "",
+		},
+		{
+			name: "exit error with zero code",
+			args: []string{"stop"},
+
+			code:   0,
+			stderr: "",
+		},
+		{
+			name: "exit error wrapping",
+			args: []string{"wrap"},
+
+			code:   3,
+			stderr: "wrapped: file does not exist\n",
+		},
+		{
+			name: "usage error from command",
+			args: []string{"usage"},
+
+			code: 2,
+			stderr: strings.Join([]string{
+				"Usage:",
+				"",
+				"  prog usage ",
+				"",
+				"",
+			}, "\n"),
 		},
 		{
 			name:   "cancelled",
