@@ -80,6 +80,7 @@ func (c Commands) Description() string {
 var _ interface { // Compile time checks of desired interfaces implementation.
 	Command
 	NameProvider
+	PrologProvider
 	SynopsisProvider
 	DescriptionProvider
 	EpilogProvider
@@ -95,6 +96,8 @@ type Container struct {
 	DoRun func(context.Context, []string) error
 	// DoName allows to override NameProvider behaviour.
 	DoName func() string
+	// DoProlog allows to override PrologProvider behaviour.
+	DoProlog func() string
 	// DoSynopsis allows to override SynopsisProvider behaviour.
 	DoSynopsis func() string
 	// DoDescription allows to override DescriptionProvider behaviour.
@@ -123,6 +126,14 @@ func (c *Container) Name() string {
 		return f()
 	}
 	return name(c.Command)
+}
+
+// Prolog implements PrologProvider interface.
+func (c *Container) Prolog() string {
+	if f := c.DoProlog; f != nil {
+		return f()
+	}
+	return prolog(c.Command)
 }
 
 // Synopsis implements SynopsisProvider interface.

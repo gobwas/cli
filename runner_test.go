@@ -14,6 +14,7 @@ import (
 
 type testCommand struct {
 	name     string
+	prolog   string
 	synopsis string
 	epilog   string
 	flags    func(*flag.FlagSet)
@@ -21,6 +22,7 @@ type testCommand struct {
 }
 
 func (c *testCommand) Name() string     { return c.name }
+func (c *testCommand) Prolog() string   { return c.prolog }
 func (c *testCommand) Synopsis() string { return c.synopsis }
 func (c *testCommand) Epilog() string   { return c.epilog }
 
@@ -45,6 +47,7 @@ func TestRunnerRun(t *testing.T) {
 	root := Commands{
 		"sleep": &testCommand{
 			name:     "Sleeps.",
+			prolog:   "Sleeps for a while, doing nothing.\n\nIt wakes up on its own.",
 			synopsis: "[-v] [arg...]",
 			epilog:   "Exit status is 0 when it slept.",
 			flags: func(fs *flag.FlagSet) {
@@ -82,7 +85,9 @@ func TestRunnerRun(t *testing.T) {
 		}),
 	}
 	sleepHelp := strings.Join([]string{
-		"Sleeps.",
+		"Sleeps for a while, doing nothing.",
+		"",
+		"It wakes up on its own.",
 		"",
 		"Usage:",
 		"",
