@@ -68,7 +68,10 @@ func TestRunnerRun(t *testing.T) {
 			return Exitf(3, "wrapped: %w", os.ErrNotExist)
 		}),
 		"usage": CommandFunc(func(context.Context, []string) error {
-			return ErrUsage
+			return &UsageError{}
+		}),
+		"args": CommandFunc(func(_ context.Context, args []string) error {
+			return Usagef("expected %d arguments; got %d", 2, len(args))
 		}),
 		"wait": CommandFunc(func(ctx context.Context, _ []string) error {
 			<-ctx.Done()
@@ -93,6 +96,7 @@ func TestRunnerRun(t *testing.T) {
 		"  prog [help] <command>",
 		"",
 		"Commands:",
+		"  args",
 		"  exit",
 		"  fail",
 		"  silent",
@@ -156,9 +160,8 @@ func TestRunnerRun(t *testing.T) {
 			name: "unknown command",
 			args: []string{"nope"},
 
-			code: 2,
-			stderr: "`prog nope`: unknown command\n" +
-				"Run `prog help` for help.\n",
+			code:   2,
+			stderr: "`prog nope`: unknown command\n\n" + rootUsage,
 		},
 		{
 			name: "unknown flag",
@@ -232,7 +235,22 @@ func TestRunnerRun(t *testing.T) {
 			stderr: strings.Join([]string{
 				"Usage:",
 				"",
-				"  prog usage ",
+				"  prog usage",
+				"",
+				"",
+			}, "\n"),
+		},
+		{
+			name: "usage error with message",
+			args: []string{"args", "a"},
+
+			code: 2,
+			stderr: strings.Join([]string{
+				"expected 2 arguments; got 1",
+				"",
+				"Usage:",
+				"",
+				"  prog args",
 				"",
 				"",
 			}, "\n"),

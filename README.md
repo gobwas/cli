@@ -36,10 +36,10 @@ code 0. Usage printed because the invocation was wrong (a command group given
 no command) goes to stderr with exit code 2, as do other errors with their own
 codes.
 
-A command controls this too: return `cli.ErrUsage` (say, on wrong positional
-arguments) to get its usage printed, `cli.ErrHelp` to get its help printed, or
-`cli.Exitf()` (or a `cli.ExitError` directly) to exit with a specific code and
-message.
+A command controls this too: return `cli.Usagef()` (or a `cli.UsageError`
+directly) on, say, wrong positional arguments to get the message and its usage
+printed, `cli.ErrHelp` to get its help printed, or `cli.Exitf()` (or a
+`cli.ExitError` directly) to exit with a specific code and message.
 
 ## Limitations
 

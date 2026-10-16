@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 )
 
@@ -98,9 +99,13 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		io.Copy(r.stdout(), &buf)
 		return 0
 	}
-	if errors.Is(err, ErrUsage) {
-		// Help was not asked for; the invocation was wrong. Usage goes
-		// where errors go, with the usage exit code.
+	if u, ok := errors.AsType[*UsageError](err); ok {
+		if u.Err != nil {
+			fmt.Fprintln(r.stderr(), err)
+			fmt.Fprintln(r.stderr())
+		}
+		// Help was not asked for; the invocation was wrong.
+		// Usage goes where errors go, with the usage exit code.
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
 		r.printFlags(ctx, &buf)
@@ -148,7 +153,11 @@ func (r *Runner) printUsage(ctx context.Context, dst io.Writer) {
 	}
 	fmt.Fprintln(dst, "Usage:")
 	fmt.Fprintln(dst)
-	fmt.Fprintf(dst, "  %s %s\n", commandPath(ctx), synopsis(cmd))
+	// NOTE: trim the trailing space left by an empty synopsis.
+	fmt.Fprintln(dst, strings.TrimRight(
+		fmt.Sprintf("  %s %s", commandPath(ctx), synopsis(cmd)),
+		" ",
+	))
 	fmt.Fprintln(dst)
 	if s := description(cmd); s != "" {
 		fmt.Fprintln(dst, s)
@@ -235,25 +244,48 @@ var defaultPrintFlags = func(_ context.Context, w io.Writer, fs *flag.FlagSet) e
 	return nil
 }
 
-var (
-	// ErrHelp is help asked for explicitly (-h or the help command).
-	//
-	// A Command may return it to have its help printed to Stdout with exit
-	// code 0.
-	ErrHelp = errors.New("help requested")
+// ErrHelp is help asked for explicitly (-h or the help command).
+//
+// A Command may return it to have its help printed to Stdout with exit code 0.
+var ErrHelp = errors.New("help requested")
 
-	// ErrUsage is an invocation that cannot run, such as a command container
-	// given no command.
-	//
-	// A Command may return it (for example, when given wrong positional
-	// arguments) to have its usage printed to Stderr with exit code 2.
-	ErrUsage = errors.New("usage error")
-)
+// Usagef returns a UsageError with the message formatted as fmt.Errorf() does.
+// That is, using %w verb in f wraps the error.
+func Usagef(f string, args ...any) error {
+	return &UsageError{
+		Err: fmt.Errorf(f, args...),
+	}
+}
+
+// UsageError represents an invocation that cannot run, such as a command
+// container given no command.
+//
+// A Command may return it (for example, when given wrong positional arguments)
+// to have its usage printed to Stderr with exit code 2.
+//
+// Err is the optional field describing what error caused this. It's printed to
+// stderr before the usage text.
+type UsageError struct {
+	Err error
+}
+
+// Error implements error interface.
+// It returns Err.Error() or, if Err is nil, a generic "usage error" message.
+func (e *UsageError) Error() string {
+	if e.Err == nil {
+		return "usage error"
+	}
+	return e.Err.Error()
+}
+
+// Unwrap returns Err.
+func (e *UsageError) Unwrap() error {
+	return e.Err
+}
 
 // Exitf returns an error which makes Runner exit with the given code, printing
-// the formatted message Stderr.
-//
-// Using %w verb in f wraps the error as fmt.Errorf does.
+// the message formatted as fmt.Errorf() does to Stderr. That is, using %w verb
+// in f wraps the error.
 func Exitf(code int, f string, args ...any) error {
 	return &ExitError{
 		Code: code,

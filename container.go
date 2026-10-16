@@ -27,7 +27,7 @@ top:
 		if help {
 			return ErrHelp
 		}
-		return ErrUsage
+		return &UsageError{}
 	}
 	if args[0] == "help" {
 		help = true
@@ -37,10 +37,8 @@ top:
 	name := args[0]
 	cmd := c[name]
 	if cmd == nil {
-		return Exitf(2,
-			"`%[1]s %[2]s`: unknown command\nRun `%[1]s help` for help.",
-			commandPath(ctx), name,
-		)
+		// Usage of this container (with the list of commands) follows.
+		return Usagef("`%s %s`: unknown command", commandPath(ctx), name)
 	}
 	if help {
 		setup(ctx, cmd, name)
