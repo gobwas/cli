@@ -110,13 +110,13 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 	if baseCtx.Err() != nil {
 		return contextExitCode(baseCtx)
 	}
-	if e, ok := errors.AsType[*exitError](err); ok {
+	if e, ok := errors.AsType[*ExitError](err); ok {
 		// An empty reason is a code alone, with nothing to say: a search that
 		// found nothing, as grep exits 1 in silence.
-		if e.reason != "" {
+		if e.Reason != "" {
 			fmt.Fprintln(r.stderr(), err)
 		}
-		return e.code
+		return e.Code
 	}
 	if err != nil {
 		fmt.Fprintln(r.stderr(), err)
@@ -240,20 +240,27 @@ var (
 	errUsage = errors.New("usage error")
 )
 
-// Exitf creates an error which reception cause Runner.Main() to exit with
-// given code preceded by formatted message (if not empty).
+// Exitf returns an error which makes Runner exit with the given code, printing
+// the formatted message to Stderr if it is not empty.
 func Exitf(code int, f string, args ...any) error {
-	return &exitError{
-		code:   code,
-		reason: fmt.Sprintf(f, args...),
+	return &ExitError{
+		Code:   code,
+		Reason: fmt.Sprintf(f, args...),
 	}
 }
 
-type exitError struct {
-	code   int
-	reason string
+// ExitError signals that program must be terminated with the given exit code.
+// Non-empty Reason is printed to Stderr before exit.
+type ExitError struct {
+	Code   int
+	Reason string
 }
 
-func (e *exitError) Error() string {
-	return e.reason
+// Error implements error interface.
+// It returns Reason or, if it is empty, a generic "exit status" message.
+func (e *ExitError) Error() string {
+	if e.Reason == "" {
+		return fmt.Sprintf("exit status %d", e.Code)
+	}
+	return e.Reason
 }
