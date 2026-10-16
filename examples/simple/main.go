@@ -21,7 +21,7 @@ func main() {
 var _ interface {
 	cli.Command
 	cli.FlagDefiner
-	cli.NameProvider
+	cli.SummaryProvider
 	cli.SynopsisProvider
 } = (*sleepCommand)(nil)
 
@@ -36,7 +36,7 @@ func (s *sleepCommand) DefineFlags(fs *flag.FlagSet) {
 	)
 }
 
-func (s *sleepCommand) Name() string {
+func (s *sleepCommand) Summary() string {
 	return "Suspends execution for a given amount of time."
 }
 

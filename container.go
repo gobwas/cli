@@ -69,7 +69,7 @@ func (c Commands) Description() string {
 		fmt.Fprintf(&sb, "\n  %s", key)
 		// Pad only when there is something to align, to not leave trailing
 		// whitespace.
-		if s := name(c[key]); s != "" {
+		if s := summary(c[key]); s != "" {
 			pad := width - utf8.RuneCountInString(key) + 2
 			fmt.Fprintf(&sb, "%*s%s", pad, "", s)
 		}
@@ -79,7 +79,7 @@ func (c Commands) Description() string {
 
 var _ interface { // Compile time checks of desired interfaces implementation.
 	Command
-	NameProvider
+	SummaryProvider
 	PrologProvider
 	SynopsisProvider
 	DescriptionProvider
@@ -94,8 +94,8 @@ type Container struct {
 
 	// DoRun allows to override Command behaviour.
 	DoRun func(context.Context, []string) error
-	// DoName allows to override NameProvider behaviour.
-	DoName func() string
+	// DoSummary allows to override SummaryProvider behaviour.
+	DoSummary func() string
 	// DoProlog allows to override PrologProvider behaviour.
 	DoProlog func() string
 	// DoSynopsis allows to override SynopsisProvider behaviour.
@@ -120,12 +120,12 @@ func (c *Container) Run(ctx context.Context, args []string) error {
 	return c.Command.Run(ctx, args)
 }
 
-// Name implements NameProvider interface.
-func (c *Container) Name() string {
-	if f := c.DoName; f != nil {
+// Summary implements SummaryProvider interface.
+func (c *Container) Summary() string {
+	if f := c.DoSummary; f != nil {
 		return f()
 	}
-	return name(c.Command)
+	return summary(c.Command)
 }
 
 // Prolog implements PrologProvider interface.

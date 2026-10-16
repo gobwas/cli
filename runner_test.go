@@ -13,7 +13,7 @@ import (
 )
 
 type testCommand struct {
-	name     string
+	summary  string
 	prolog   string
 	synopsis string
 	epilog   string
@@ -21,7 +21,7 @@ type testCommand struct {
 	run      func(context.Context, []string) error
 }
 
-func (c *testCommand) Name() string     { return c.name }
+func (c *testCommand) Summary() string  { return c.summary }
 func (c *testCommand) Prolog() string   { return c.prolog }
 func (c *testCommand) Synopsis() string { return c.synopsis }
 func (c *testCommand) Epilog() string   { return c.epilog }
@@ -46,7 +46,7 @@ func TestRunnerRun(t *testing.T) {
 	)
 	root := Commands{
 		"sleep": &testCommand{
-			name:     "Sleeps.",
+			summary:  "Sleeps.",
 			prolog:   "Sleeps for a while, doing nothing.\n\nIt wakes up on its own.",
 			synopsis: "[-v] [arg...]",
 			epilog:   "Exit status is 0 when it slept.",

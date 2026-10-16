@@ -20,10 +20,10 @@ func (f CommandFunc) Run(ctx context.Context, args []string) error {
 }
 
 type (
-	// NameProvider gives the one-line summary listed next to the command's
-	// name.
-	NameProvider interface {
-		Name() string
+	// SummaryProvider gives the one-line summary listed next to the
+	// command's name.
+	SummaryProvider interface {
+		Summary() string
 	}
 	// PrologProvider gives the text that opens the command's help, before its
 	// usage.
@@ -68,9 +68,9 @@ func description(cmd Command) string {
 	return ""
 }
 
-func name(cmd Command) string {
-	if s, ok := cmd.(NameProvider); ok {
-		return s.Name()
+func summary(cmd Command) string {
+	if s, ok := cmd.(SummaryProvider); ok {
+		return s.Summary()
 	}
 	return ""
 }

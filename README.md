@@ -110,11 +110,11 @@ Options:
         how long to sleep (default 1s)
 ```
 
-However, you can implement optional `cli.NameProvider` and, say,
+However, you can implement optional `cli.SummaryProvider` and, say,
 `cli.SynopsisProvider` to make help message more specific:
 
 ```go
-func (s *sleepCommand) Name() string {
+func (s *sleepCommand) Summary() string {
 	return "Suspends execution for a given amount of time."
 }
 
