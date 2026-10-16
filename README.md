@@ -148,6 +148,7 @@ Usage:
   example [help] <command>
 
 Commands:
+
   sleep  Suspends execution for a given amount of time.
 ```
 

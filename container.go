@@ -64,7 +64,7 @@ func (c Commands) Description() string {
 	// without a name, and it treats the last row without trailing newline
 	// differently from the rest, making the output inconsistent.
 	var sb strings.Builder
-	sb.WriteString("Commands:")
+	sb.WriteString("Commands:\n")
 	for _, key := range keys {
 		fmt.Fprintf(&sb, "\n  %s", key)
 		// Pad only when there is something to align, to not leave trailing

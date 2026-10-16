@@ -96,6 +96,7 @@ func TestRunnerRun(t *testing.T) {
 		"  prog [help] <command>",
 		"",
 		"Commands:",
+		"",
 		"  args",
 		"  exit",
 		"  fail",
