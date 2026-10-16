@@ -29,6 +29,9 @@ type (
 	DescriptionProvider interface {
 		Description() string
 	}
+	EpilogProvider interface {
+		Epilog() string
+	}
 	FlagDefiner interface {
 		DefineFlags(*flag.FlagSet)
 	}
@@ -59,6 +62,13 @@ func description(cmd Command) string {
 func name(cmd Command) string {
 	if s, ok := cmd.(NameProvider); ok {
 		return s.Name()
+	}
+	return ""
+}
+
+func epilog(cmd Command) string {
+	if s, ok := cmd.(EpilogProvider); ok {
+		return s.Epilog()
 	}
 	return ""
 }

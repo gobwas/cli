@@ -96,6 +96,7 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
 		r.printFlags(ctx, &buf)
+		r.printEpilog(ctx, &buf)
 		io.Copy(r.stdout(), &buf)
 		return 0
 	}
@@ -109,6 +110,7 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		var buf bytes.Buffer
 		r.printUsage(ctx, &buf)
 		r.printFlags(ctx, &buf)
+		r.printEpilog(ctx, &buf)
 		io.Copy(r.stderr(), &buf)
 		return 2
 	}
@@ -177,7 +179,24 @@ func (r *Runner) printFlags(ctx context.Context, dst io.Writer) {
 	}
 	fmt.Fprintf(dst, "Options:\n")
 	fmt.Fprintln(dst)
-	io.Copy(dst, &buf)
+	// Every section ends with an empty line, so the epilog after the flags
+	// stands apart whatever the flag printer leaves.
+	b := buf.Bytes()
+	dst.Write(b)
+	if !bytes.HasSuffix(b, []byte("\n\n")) {
+		fmt.Fprintln(dst)
+	}
+}
+
+// printEpilog prints the command's epilog, if it has one, after the flags.
+func (r *Runner) printEpilog(ctx context.Context, dst io.Writer) {
+	info := lastCommandInfo(ctx)
+	s := epilog(info.Command)
+	if s == "" {
+		return
+	}
+	fmt.Fprintln(dst, s)
+	fmt.Fprintln(dst)
 }
 
 func (r *Runner) printDefaults(ctx context.Context, dst io.Writer, fs *flag.FlagSet) {

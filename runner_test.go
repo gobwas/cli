@@ -15,12 +15,14 @@ import (
 type testCommand struct {
 	name     string
 	synopsis string
+	epilog   string
 	flags    func(*flag.FlagSet)
 	run      func(context.Context, []string) error
 }
 
 func (c *testCommand) Name() string     { return c.name }
 func (c *testCommand) Synopsis() string { return c.synopsis }
+func (c *testCommand) Epilog() string   { return c.epilog }
 
 func (c *testCommand) DefineFlags(fs *flag.FlagSet) {
 	if c.flags != nil {
@@ -44,6 +46,7 @@ func TestRunnerRun(t *testing.T) {
 		"sleep": &testCommand{
 			name:     "Sleeps.",
 			synopsis: "[-v] [arg...]",
+			epilog:   "Exit status is 0 when it slept.",
 			flags: func(fs *flag.FlagSet) {
 				fs.BoolVar(&verbose, "v", false, "be verbose")
 			},
@@ -88,6 +91,9 @@ func TestRunnerRun(t *testing.T) {
 		"Options:",
 		"",
 		"  -v\tbe verbose",
+		"",
+		"Exit status is 0 when it slept.",
+		"",
 		"",
 	}, "\n")
 	rootUsage := strings.Join([]string{

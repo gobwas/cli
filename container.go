@@ -82,6 +82,7 @@ var _ interface { // Compile time checks of desired interfaces implementation.
 	NameProvider
 	SynopsisProvider
 	DescriptionProvider
+	EpilogProvider
 	FlagDefiner
 } = (*Container)(nil)
 
@@ -98,6 +99,8 @@ type Container struct {
 	DoSynopsis func() string
 	// DoDescription allows to override DescriptionProvider behaviour.
 	DoDescription func() string
+	// DoEpilog allows to override EpilogProvider behaviour.
+	DoEpilog func() string
 	// DoDefineFlags allows to override FlagDefiner behaviour.
 	DoDefineFlags func(*flag.FlagSet)
 }
@@ -136,6 +139,14 @@ func (c *Container) Description() string {
 		return f()
 	}
 	return description(c.Command)
+}
+
+// Epilog implements EpilogProvider interface.
+func (c *Container) Epilog() string {
+	if f := c.DoEpilog; f != nil {
+		return f()
+	}
+	return epilog(c.Command)
 }
 
 // DefineFlags implements FlagDefiner interface.
