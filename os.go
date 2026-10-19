@@ -8,13 +8,16 @@ import (
 	"syscall"
 )
 
-// signalError is the cancellation cause of a context cancelled by a signal.
-type signalError struct {
-	sig os.Signal
+// SignalError is the cancellation cause of a context the Runner cancelled on a
+// signal: context.Cause(ctx) returns it, so a command can tell an interruption
+// from any other cancellation.
+type SignalError struct {
+	Signal os.Signal
 }
 
-func (e *signalError) Error() string {
-	return "received signal: " + e.sig.String()
+// Error implements error interface.
+func (e *SignalError) Error() string {
+	return "cancelled by signal: " + e.Signal.String()
 }
 
 // signalExitCode returns the exit code conventional for a process terminated
@@ -29,8 +32,8 @@ func signalExitCode(sig os.Signal) int {
 // contextExitCode returns the exit code for a cancelled ctx: the one of the
 // signal which cancelled it, or 130 if it was cancelled for another reason.
 func contextExitCode(ctx context.Context) int {
-	if e, ok := errors.AsType[*signalError](context.Cause(ctx)); ok {
-		return signalExitCode(e.sig)
+	if e, ok := errors.AsType[*SignalError](context.Cause(ctx)); ok {
+		return signalExitCode(e.Signal)
 	}
 	return 130
 }
@@ -48,7 +51,7 @@ func withTrapCancel(ctx context.Context, ss ...os.Signal) (context.Context, cont
 	go func() {
 		defer signal.Stop(ch)
 		sig := <-ch
-		cancel(&signalError{sig})
+		cancel(&SignalError{Signal: sig})
 	}()
 	signal.Notify(ch, ss...)
 	return ret, func() { cancel(nil) }

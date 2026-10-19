@@ -83,6 +83,13 @@ func TestRunnerRun(t *testing.T) {
 			<-ctx.Done()
 			return ctx.Err()
 		}),
+		"report": CommandFunc(func(ctx context.Context, _ []string) error {
+			<-ctx.Done()
+			if e, ok := errors.AsType[*SignalError](context.Cause(ctx)); ok {
+				return Exitf(100, "interrupted by %s: result unknown", e.Signal)
+			}
+			return ctx.Err()
+		}),
 	}
 	sleepHelp := strings.Join([]string{
 		"Sleeps for a while, doing nothing.",
@@ -111,6 +118,7 @@ func TestRunnerRun(t *testing.T) {
 		"  args",
 		"  exit",
 		"  fail",
+		"  report",
 		"  silent",
 		"  sleep   Sleeps.",
 		"  stop",
@@ -282,6 +290,22 @@ func TestRunnerRun(t *testing.T) {
 
 			code: 143,
 		},
+		{
+			name:   "cancelled by signal with exit error",
+			args:   []string{"report"},
+			cancel: true,
+			signal: syscall.SIGINT,
+
+			code:   100,
+			stderr: "interrupted by interrupt: result unknown\n",
+		},
+		{
+			name:   "cancelled with exit error",
+			args:   []string{"report"},
+			cancel: true,
+
+			code: 130,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			actArgs = nil
@@ -297,7 +321,7 @@ func TestRunnerRun(t *testing.T) {
 			if test.cancel {
 				var cause error
 				if test.signal != nil {
-					cause = &signalError{test.signal}
+					cause = &SignalError{Signal: test.signal}
 				}
 				cancel(cause)
 			}

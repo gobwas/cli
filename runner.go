@@ -80,11 +80,12 @@ func (r *Runner) Main(cmd Command) {
 // Run runs given command with given name and arguments (without the program
 // name) and returns the exit code of the process.
 //
-// It does some i/o, such that printing help messages to Stdout or usage and
-// errors returned from cmd.Run() to Stderr. Unlike Main(), it neither traps
-// OS signals nor exits the process: a cancelled ctx is reported as exit code
-// 128 plus the number of the signal which cancelled it, or 130 if it was
-// cancelled for another reason.
+// It does some I/O, such that printing help messages to Stdout or usage and
+// errors returned from cmd.Run() to Stderr. Unlike Main(), it neither traps OS
+// signals nor exits the process: a cancelled ctx is reported as exit code 128
+// plus the number of the signal which cancelled it, or 130 if it was cancelled
+// for another reason, unless the command returned an ExitError, whose code and
+// message are reported as they would be otherwise.
 func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []string) int {
 	baseCtx := ctx
 	ctx = withRuntimeInfo(ctx, &runtimeInfo{
@@ -114,16 +115,18 @@ func (r *Runner) Run(ctx context.Context, cmd Command, name string, args []strin
 		io.Copy(r.stderr(), &buf)
 		return 2
 	}
-	if baseCtx.Err() != nil {
-		return contextExitCode(baseCtx)
-	}
 	if e, ok := errors.AsType[*ExitError](err); ok {
-		// A nil Err is a code alone, with nothing to say: a search that
-		// found nothing, as grep exits 1 in silence.
+		// A code is trusted, a cancelled context is ignored: a command that
+		// returns one after a signal has something to say about what the
+		// signal interrupted. A nil Err is a code alone, with nothing to say:
+		// a search that found nothing, as grep exits 1 in silence.
 		if e.Err != nil {
 			fmt.Fprintln(r.stderr(), err)
 		}
 		return e.Code
+	}
+	if baseCtx.Err() != nil {
+		return contextExitCode(baseCtx)
 	}
 	if err != nil {
 		fmt.Fprintln(r.stderr(), err)
